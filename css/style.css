@@ -34,8 +34,9 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Universal transition for theme switch */
-*, *::before, *::after {
+/* Smooth theme switch — scope to elements that change with dark mode */
+body, .navbar, .card, .offcanvas, .modal-content, footer,
+.product-card, .chat-box, .card-img-container {
   transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
 }
 

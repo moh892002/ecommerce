@@ -11,7 +11,13 @@ function load(key, fallback) {
 }
 function save(key, data) { localStorage.setItem("shopwave_" + key, JSON.stringify(data)); }
 
-function getOrders() { return load("orders", []); }
+function getOrders() {
+  return load("orders", []).map(o => ({
+    ...o,
+    total: typeof o.total === "number" ? o.total : (parseFloat(o.total) || 0),
+    items: Array.isArray(o.items) ? o.items.length : (typeof o.items === "number" ? o.items : 0)
+  }));
+}
 function setOrders(o) { save("orders", o); }
 
 function getProducts() {
@@ -22,6 +28,13 @@ function getProducts() {
 }
 
 function setProducts(p) { save("products", p); }
+
+function getCategories() {
+  const stored = load("categories", null);
+  if (stored) return stored;
+  return ["electronics", "clothing", "home", "accessories"];
+}
+function setCategories(c) { save("categories", c); }
 
 function getDefaultProducts() {
   return [
@@ -90,6 +103,7 @@ function navigateTo(page) {
     case "dashboard": renderDashboard(); break;
     case "products": renderProducts(); break;
     case "orders": renderOrders(); break;
+    case "categories": renderCategories(); break;
   }
 }
 
@@ -99,7 +113,7 @@ function navigateTo(page) {
 function renderDashboard() {
   const products = getProducts();
   const orders = getOrders();
-  const revenue = orders.filter(o => o.status !== "Cancelled").reduce((s, o) => s + o.total, 0);
+  const revenue = orders.filter(o => o.status !== "Cancelled").reduce((s, o) => s + (o.total || 0), 0);
   const saleCount = products.filter(p => p.sale).length;
 
   const last5 = orders.slice(-5).reverse();
@@ -151,8 +165,8 @@ function drawCategoryChart(labels, data, colors) {
   const ctx = c.getContext("2d");
   const total = data.reduce((s, v) => s + v, 0);
   const w = c.width = c.parentElement.clientWidth;
-  const h = c.height = 180;
-  const cx = w / 2, cy = h / 2, r = Math.min(cx, cy) - 20;
+  const h = c.height = 200;
+  const cx = w / 2, cy = 75, r = Math.min(cx, 75) - 10;
 
   ctx.clearRect(0, 0, w, h);
   let start = -Math.PI / 2;
@@ -172,13 +186,13 @@ function drawCategoryChart(labels, data, colors) {
   ctx.fillStyle = "#fff";
   ctx.fill();
 
-  // Legend
-  let ly = h - 20;
+  // Legend (below the donut, two-column layout)
   ctx.textAlign = "left";
   ctx.font = "11px Poppins, sans-serif";
+  const legendTop = cy + r + 20;
   data.forEach((val, i) => {
     const x = i % 2 === 0 ? 20 : w / 2 + 10;
-    const y = ly - Math.floor(i / 2) * 18;
+    const y = legendTop + Math.floor(i / 2) * 18;
     ctx.fillStyle = colors[i % colors.length];
     ctx.fillRect(x, y - 8, 10, 10);
     ctx.fillStyle = "#666";
@@ -227,13 +241,16 @@ function renderProducts() {
 function openProductForm(id) {
   editProductId = id;
   const products = getProducts();
+  const categories = getCategories();
   const p = id ? products.find(x => x.id === id) : null;
 
   document.getElementById("productFormTitle").textContent = p ? "Edit Product" : "Add Product";
   document.getElementById("pfSubmit").textContent = p ? "Update" : "Save";
   document.getElementById("pfId").value = p ? p.id : "";
   document.getElementById("pfName").value = p ? p.name : "";
-  document.getElementById("pfCategory").value = p ? p.category : "electronics";
+  const catSelect = document.getElementById("pfCategory");
+  catSelect.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join("");
+  catSelect.value = p ? p.category : (categories[0] || "");
   document.getElementById("pfPrice").value = p ? p.price : "";
   document.getElementById("pfOriginalPrice").value = p ? (p.originalPrice || "") : "";
   document.getElementById("pfSale").value = p ? (p.sale ? "true" : "false") : "false";
@@ -319,6 +336,73 @@ function renderOrders() {
       if (o) { o.status = sel.value; setOrders(orders); renderOrders(); }
     });
   });
+}
+
+// ============================================================
+//  CATEGORIES
+// ============================================================
+function renderCategories() {
+  const categories = getCategories();
+  const products = getProducts();
+  pageContent.innerHTML = `
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h4 class="fw-bold mb-0"><i class="bi bi-tags"></i> Categories</h4>
+      <button class="btn btn-primary btn-sm" id="addCategoryBtn"><i class="bi bi-plus-lg"></i> Add Category</button>
+    </div>
+    <div class="card shadow-sm">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light"><tr><th>Name</th><th>Products</th><th style="width:120px;">Actions</th></tr></thead>
+          <tbody>${categories.map(c => `
+            <tr>
+              <td class="fw-semibold small">${c}</td>
+              <td><span class="badge bg-secondary bg-opacity-10 text-secondary">${products.filter(p => p.category === c).length}</span></td>
+              <td>
+                <button class="btn btn-outline-primary btn-icon edit-category" data-name="${c}" title="Edit"><i class="bi bi-pencil"></i></button>
+                <button class="btn btn-outline-danger btn-icon delete-category" data-name="${c}" title="Delete"><i class="bi bi-trash"></i></button>
+              </td>
+            </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+
+  document.getElementById("addCategoryBtn")?.addEventListener("click", () => openCategoryForm(null));
+  document.querySelectorAll(".edit-category").forEach(b => b.addEventListener("click", () => openCategoryForm(b.dataset.name)));
+  document.querySelectorAll(".delete-category").forEach(b => b.addEventListener("click", () => deleteCategory(b.dataset.name)));
+}
+
+let editCategoryName = null;
+function openCategoryForm(name) {
+  editCategoryName = name;
+  document.getElementById("catFormTitle").textContent = name ? "Edit Category" : "Add Category";
+  document.getElementById("catSubmit").textContent = name ? "Update" : "Save";
+  document.getElementById("catName").value = name || "";
+  new bootstrap.Modal(document.getElementById("categoryFormModal")).show();
+}
+
+document.getElementById("categoryForm")?.addEventListener("submit", e => {
+  e.preventDefault();
+  const name = document.getElementById("catName").value.trim();
+  if (!name) return;
+  let categories = getCategories();
+  if (editCategoryName) {
+    const idx = categories.indexOf(editCategoryName);
+    if (idx > -1) categories[idx] = name;
+  } else {
+    if (categories.includes(name)) { alert("Category already exists."); return; }
+    categories.push(name);
+  }
+  setCategories(categories);
+  bootstrap.Modal.getInstance(document.getElementById("categoryFormModal")).hide();
+  renderCategories();
+});
+
+function deleteCategory(name) {
+  if (!confirm("Delete category \"" + name + "\"?")) return;
+  let categories = getCategories().filter(c => c !== name);
+  setCategories(categories);
+  renderCategories();
 }
 
 // ============================================================

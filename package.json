@@ -1,0 +1,10 @@
+{
+  "name": "shopwave",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A feature-rich e-commerce frontend demo — cart, wishlist, checkout, admin dashboard",
+  "scripts": {
+    "start": "npx serve .",
+    "dev": "npx serve ."
+  }
+}

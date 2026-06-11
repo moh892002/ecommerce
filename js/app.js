@@ -3,7 +3,7 @@
    ================================================== */
 
 // ---- Product Data (enriched) ----
-const products = [
+let products = [
   { id: 1, name: "Wireless Headphones", category: "electronics", price: 59.99, originalPrice: 79.99, sale: true, rating: 4.5, reviews: 128, image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop&crop=center", description: "Premium over-ear wireless headphones with active noise cancellation, 30-hour battery life, and deep bass sound." },
   { id: 2, name: "Smart Watch", category: "electronics", price: 129.99, originalPrice: null, sale: false, rating: 4.3, reviews: 95, image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop&crop=center", description: "Fitness tracker and smartwatch with heart-rate monitor, GPS, and a vibrant AMOLED display." },
   { id: 3, name: "Bluetooth Speaker", category: "electronics", price: 39.99, originalPrice: 49.99, sale: true, rating: 4.6, reviews: 210, image: "https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400&h=400&fit=crop&crop=center", description: "Portable waterproof speaker with 360-degree sound and 12-hour playtime." },
@@ -17,6 +17,10 @@ const products = [
   { id: 11, name: "Leather Wallet", category: "accessories", price: 44.99, originalPrice: null, sale: false, rating: 4.5, reviews: 178, image: "https://images.unsplash.com/photo-1627123424574-724758594e93?w=400&h=400&fit=crop&crop=center", description: "Genuine leather bifold wallet with RFID-blocking technology." },
   { id: 12, name: "Backpack", category: "accessories", price: 49.99, originalPrice: 64.99, sale: true, rating: 4.6, reviews: 310, image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=400&fit=crop&crop=center", description: "Durable 25L backpack with padded laptop compartment and water-resistant fabric." }
 ];
+
+// Override products with admin edits if they exist
+const adminProducts = loadStorage("products", null);
+if (adminProducts) products = adminProducts;
 
 // ---- State ----
 let cart = loadStorage("cart", []);
@@ -625,6 +629,16 @@ $("checkoutBtn")?.addEventListener("click", () => {
 
 checkoutNext?.addEventListener("click", () => {
   if (checkoutStep === 4) {
+    const order = {
+      id: "SW-" + Date.now().toString(36).toUpperCase(),
+      items: JSON.parse(JSON.stringify(cart)),
+      total: cart.reduce((s, i) => s + i.price * i.qty, 0).toFixed(2),
+      date: new Date().toISOString(),
+      status: "pending"
+    };
+    const orders = loadStorage("orders", []);
+    orders.unshift(order);
+    saveStorage("orders", orders);
     cart = [];
     renderCart();
     saveStorage("cart", cart);

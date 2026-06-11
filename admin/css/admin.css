@@ -1,0 +1,111 @@
+body {
+  font-family: "Poppins", system-ui, sans-serif;
+  background: #f5f6fa;
+}
+
+/* ---- Login ---- */
+#loginScreen .card {
+  background: #fff;
+}
+
+/* ---- Sidebar ---- */
+.sidebar {
+  width: 220px;
+  background: #1e1e2d;
+}
+
+.sidebar .nav-link {
+  color: #a2a3b7;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  padding: 10px 14px;
+  transition: all 0.2s;
+}
+
+.sidebar .nav-link:hover {
+  color: #fff;
+  background: rgba(255,255,255,0.06);
+}
+
+.sidebar .nav-link.active {
+  background: var(--bs-primary);
+  color: #fff;
+}
+
+/* ---- Stat Cards ---- */
+.stat-card {
+  border: none;
+  border-radius: 12px;
+  transition: transform 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+}
+
+.stat-card .stat-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  font-size: 1.4rem;
+}
+
+/* ---- Tables ---- */
+.table th {
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: #6c757d;
+}
+
+.table td {
+  vertical-align: middle;
+  font-size: 0.9rem;
+}
+
+.table img {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+/* ---- Status badges ---- */
+.status-badge {
+  font-size: 0.75rem;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-weight: 500;
+}
+
+/* ---- Charts placeholder ---- */
+.chart-placeholder {
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--bs-secondary-bg);
+  color: var(--bs-secondary-color);
+}
+
+/* ---- Orders table ---- */
+.order-id {
+  font-family: monospace;
+  font-size: 0.8rem;
+}
+
+/* ---- Product actions ---- */
+.btn-icon {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}

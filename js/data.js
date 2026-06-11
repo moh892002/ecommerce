@@ -95,6 +95,18 @@ function saveStorage(key, data) {
   localStorage.setItem("shopwave_" + key, JSON.stringify(data));
 }
 
+function safeSave(key, data) {
+  try {
+    saveStorage(key, data);
+  } catch (e) {
+    if (e.name === "QuotaExceededError" || e.code === 22) {
+      showToast("Storage is full. Try clearing some data.", "danger");
+    } else {
+      showToast("Could not save data. " + e.message, "danger");
+    }
+  }
+}
+
 // ---- Toast Queue ----
 const toastQueue = [];
 let toastShowing = false;

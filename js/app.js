@@ -161,23 +161,33 @@ $("checkoutBtn")?.addEventListener("click", () => {
 });
 
 checkoutNext?.addEventListener("click", () => {
+  if (checkoutStep === 2 && !validateShippingInputs()) return;
   if (checkoutStep === 4) {
-    const rawTotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    checkoutNext.disabled = true;
+    const spinner = $("placeOrderSpinner");
+    if (spinner) spinner.classList.remove("d-none");
+    const rawTotal = calcCartSubtotal(cart);
     const order = {
       id: "SW-" + Date.now().toString(36).toUpperCase(),
-      items: cart.reduce((s, i) => s + i.qty, 0),
+      items: calcCartItemCount(cart),
       total: Math.round(rawTotal * 100) / 100,
       date: new Date().toISOString(),
       status: "pending"
     };
-    const orders = loadStorage("orders", []);
-    orders.unshift(order);
-    saveStorage("orders", orders);
-    cart = [];
-    renderCart();
-    saveStorage("cart", cart);
-    bootstrap.Modal.getInstance($("checkoutModal"))?.hide();
-    showToast("Order placed! Thank you for shopping.");
+    try {
+      const orders = loadStorage("orders", []);
+      orders.unshift(order);
+      safeSave("orders", orders);
+      cart = [];
+      renderCart();
+      safeSave("cart", cart);
+      bootstrap.Modal.getInstance($("checkoutModal"))?.hide();
+      showToast("Order placed! Thank you for shopping.");
+    } catch {
+      showToast("Something went wrong placing your order. Please try again.", "danger");
+      checkoutNext.disabled = false;
+      if (spinner) spinner.classList.add("d-none");
+    }
     return;
   }
   checkoutStep++;

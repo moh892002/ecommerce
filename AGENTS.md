@@ -2,55 +2,66 @@
 
 ## Quick start
 
-No build step, no server, no npm. Open `index.html` in any browser.
-
-```
-open index.html
+```bash
+npm install
+npm run dev
+# Opens at http://localhost:3000
 ```
 
 ## Structure
 
 ```
 ecommerce/
-  index.html          — Main shop page
-  css/style.css       — Custom styles over Bootstrap
-  js/
-    data.js           — State, DOM refs, localStorage helpers, toast
-    shop.js           — Rendering & business logic (filter, cart, wishlist, checkout)
-    app.js            — Event listeners & initialization
-  admin/
-    index.html        — Admin dashboard shell
-    css/admin.css     — Admin layout & stat cards
-    js/admin.js       — Admin: login, products CRUD, orders viewer, categories, chart
+  index.html              — Main shop page (Vite entry)
+  admin/index.html        — Admin dashboard (Vite entry)
+  src/
+    main.ts               — Entry point, event listeners, init (was app.js)
+    data.ts               — State, DOM refs, toast queue, dark mode
+    shop.ts               — Rendering & business logic (filter, cart, wishlist, checkout)
+    api.ts                — API layer (Supabase + localStorage fallback)
+    types.ts              — TypeScript interfaces & constants
+    vite-env.d.ts         — Vite + Bootstrap type declarations
+    styles/
+      style.css           — Main shop styles (moved from css/)
+      admin.css           — Admin styles (moved from admin/css/)
+    admin/
+      admin.ts            — Admin: login, products CRUD, orders, categories, chart
+  supabase/
+    migrations/
+      001_initial.sql     — Full Supabase schema (run in SQL editor)
   tests/
-    index.html        — QUnit test runner (open in browser)
-    tests.js          — Unit tests for pure functions & state logic
-  package.json        — `npm start` runs `npx serve .`
-  netlify.toml        — One-click Netlify deploy config
-  AGENTS.md           — This file
-  README.md           — Project overview for GitHub
+    index.html            — QUnit test runner
+    tests.js              — Unit tests
+  js/                     — Legacy JS (kept for reference, not used by Vite)
+  css/                    — Legacy CSS (kept for reference, not used by Vite)
+  package.json            — Vite dev/build scripts
+  netlify.toml            — Netlify deploy with CSP headers
+  AGENTS.md               — This file
+  README.md               — GitHub project overview
 ```
 
 ## Stack
 
+- **Vite** (dev server + build) + **TypeScript**
 - **Bootstrap 5.3** + **Bootstrap Icons** via CDN
 - **Poppins** (Google Fonts) — the only font family
-- All product images from Unsplash (`images.unsplash.com`)
-- Fallback image: `placehold.co/400x400?text=Unavailable`
+- **Supabase** (backend — optional; falls back to localStorage)
+- **Stripe** (payments — optional; falls back to simulation)
+- Images from Unsplash + `placehold.co` fallback
 - Tests: **QUnit** via CDN (`tests/index.html`)
 
 ## Key conventions
 
-- All data persists via `localStorage` with `shopwave_*` keys
-- Product data starts hardcoded in `js/data.js` but is **overridden** by `shopwave_products` if admin has saved edits
-- Orders placed in checkout are saved to `shopwave_orders` (key `"orders"`) so they appear in the admin dashboard
-- Admin reads/writes `shopwave_products` and `shopwave_orders`; main site reads both
+- Run `npm run dev` for development, `npm run build` for production
+- All data goes through `src/api.ts` which tries Supabase first, falls back to `localStorage` (`shopwave_*` keys)
+- Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in `.env` to enable Supabase
+- Without Supabase configured, the app works exactly like the old version (localStorage only)
+- Product data seeds from hardcoded array in `api.ts`, overridden by `shopwave_products` localStorage
+- Orders placed are saved to `shopwave_orders` (localStorage) and/or Supabase `orders` table
 - Toast messages queue up sequentially (not overwritten)
-- Search is debounced at 150ms; search suggestions at 200ms
+- Search debounced at 150ms; search suggestions at 200ms
 - Staggered card entrance animation capped at `Math.min(i * 0.05, 0.5)s`
 - Image `onerror` fallback + `onload` blur-up applied to all product images
-- `safeSave(key, data)` wraps `saveStorage` in try-catch for quota errors
-- Checkout step 2 validates shipping fields before proceeding
 
 ## Pure functions (testable without DOM)
 
@@ -59,9 +70,29 @@ ecommerce/
 - `calcCartItemCount(cart)` → number
 - `renderStars(rating)` → HTML string
 
-## Adding a product
+## Setting up Supabase
 
-Add an entry to the `products` array in `js/data.js`. Required fields: `id`, `name`, `category`, `price`, `rating`, `reviews`, `image`, `description`. Optional: `originalPrice`, `sale`. Admin dashboard also allows adding products via UI — those are saved to `shopwave_products` and override the hardcoded array.
+1. Create a project at https://supabase.com
+2. Copy your project URL and anon key into `.env`:
+   ```
+   VITE_SUPABASE_URL=https://your-project.supabase.co
+   VITE_SUPABASE_ANON_KEY=your-anon-key
+   ```
+3. Run the SQL in `supabase/migrations/001_initial.sql` in the Supabase SQL Editor
+4. Enable Email Auth in Supabase Authentication settings
+
+The app now works with a real backend. Without `.env` vars, it falls back to localStorage.
+
+4. Create a `product-images` bucket in Supabase Storage (for admin image upload)
+
+## Setting up Stripe
+
+1. Create a Stripe account and get your publishable key
+2. Add to `.env`:
+   ```
+   VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
+   ```
+3. For real payments, create a serverless function to generate PaymentIntents
 
 ## Data flow
 
@@ -69,8 +100,8 @@ Add an entry to the `products` array in `js/data.js`. Required fields: `id`, `na
 - `renderProducts()` → triggered by filter, sort, search, wishlist toggle
 - `renderCart()` → triggered by add/remove/change quantity
 - Wishlist toggle optimistically updates the clicked button before re-render (300ms delay for animation)
-- Checkout step 4 writes order to `shopwave_orders` in localStorage so admin sees it
-- Admin: edits/creates products in `shopwave_products`; main site fetches from there on load
+- Checkout step 4 writes order to API layer (Supabase + localStorage)
+- Admin: edits/creates products via API layer; main site fetches from there on load
 
 ## Running tests
 
@@ -78,14 +109,4 @@ Open `tests/index.html` in a browser. All tests run in QUnit.
 
 ## What's missing for production
 
-No backend, no payment (simulated), no image CDN, no build pipeline, no CSP, no a11y pass.
-
-## Files to read first
-
-- `index.html:1-15` — meta, CDN links, font
-- `js/data.js:1-30` — product data + localStorage override
-- `js/data.js:80-120` — helpers + toast queue
-- `js/shop.js:1-30` — pure functions
-- `css/style.css:32` — font family
-- `css/style.css:88-130` — product card structure
-- `tests/tests.js` — test patterns
+No backend (optional via Supabase), no real payment (optional via Stripe), no PWA, no a11y pass.

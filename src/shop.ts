@@ -222,7 +222,6 @@ export function toggleWishlist(id: number, btnEl?: HTMLElement | null) {
 
   setTimeout(() => {
     saveWishlist(state.wishlist, state.currentUserId ?? undefined);
-    renderProducts();
     renderWishlist();
     const p = state.products.find(x => x.id === id);
     state.showToast(p ? `${idx > -1 ? "Removed from" : "Added to"} wishlist` : "", idx > -1 ? "info" : "success");
@@ -366,27 +365,23 @@ function initReviewStars() {
   reviewRating = 0;
   const container = document.getElementById("reviewStarInput");
   if (!container) return;
-  container.querySelectorAll("i").forEach(star => {
+  const stars = container.querySelectorAll("i");
+  const updateStars = (rating: number) => {
+    stars.forEach(s => {
+      const val = parseInt((s as HTMLElement).dataset.star!);
+      s.className = val <= rating ? "bi bi-star-fill text-warning" : "bi bi-star";
+    });
+  };
+  stars.forEach(star => {
     star.addEventListener("click", () => {
       reviewRating = parseInt((star as HTMLElement).dataset.star!);
-      container.querySelectorAll("i").forEach(s => {
-        const val = parseInt((s as HTMLElement).dataset.star!);
-        s.className = val <= reviewRating ? "bi bi-star-fill text-warning" : "bi bi-star";
-      });
+      updateStars(reviewRating);
     });
     star.addEventListener("mouseenter", () => {
       const val = parseInt((star as HTMLElement).dataset.star!);
-      container.querySelectorAll("i").forEach(s => {
-        const sv = parseInt((s as HTMLElement).dataset.star!);
-        s.className = sv <= val ? "bi bi-star-fill text-warning" : "bi bi-star";
-      });
+      updateStars(val);
     });
-    star.addEventListener("mouseleave", () => {
-      container.querySelectorAll("i").forEach(s => {
-        const sv = parseInt((s as HTMLElement).dataset.star!);
-        s.className = sv <= reviewRating ? "bi bi-star-fill text-warning" : "bi bi-star";
-      });
-    });
+    star.addEventListener("mouseleave", () => { updateStars(reviewRating); });
   });
 }
 

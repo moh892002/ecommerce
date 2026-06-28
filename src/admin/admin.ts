@@ -193,7 +193,7 @@ async function renderProducts() {
           <thead class="table-light"><tr><th></th><th>Name</th><th>Category</th><th>Price</th><th>Sale</th><th>Rating</th><th style="width:120px;">Actions</th></tr></thead>
           <tbody>${products.map((p: Product) => `
             <tr>
-              <td><img src="${p.image}" alt="" onerror="this.src='https://placehold.co/400x400?text=Err'"></td>
+              <td><img src="${p.image}" alt="" loading="lazy" onerror="this.src='https://placehold.co/400x400?text=Err'"></td>
               <td class="fw-semibold small">${p.name}</td>
               <td><span class="badge bg-secondary bg-opacity-10 text-secondary">${p.category}</span></td>
               <td>${p.sale ? '<span class="text-decoration-line-through text-muted me-1 small">$' + (p.originalPrice || 0).toFixed(2) + '</span>' : ''}<span class="fw-bold ${p.sale ? 'text-danger' : ''}">$${p.price.toFixed(2)}</span></td>

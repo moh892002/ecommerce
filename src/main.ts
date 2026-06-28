@@ -10,6 +10,7 @@ import "./styles/style.css";
 
 // ---- Chat ----
 let chatOpen = false;
+let priceDebounceTimer: number | undefined;
 
 state.chatToggle?.addEventListener("click", () => {
   chatOpen = !chatOpen;
@@ -221,18 +222,20 @@ state.newsletterForm?.addEventListener("submit", e => {
   input.value = "";
 });
 
-// ---- Price Range ----
+// ---- Price Range (debounced) ----
 const priceMinInput = document.getElementById("priceMin") as HTMLInputElement | null;
 const priceMaxInput = document.getElementById("priceMax") as HTMLInputElement | null;
 
 priceMinInput?.addEventListener("input", () => {
   state.setPriceMin(priceMinInput.value ? parseFloat(priceMinInput.value) : null);
-  shop.renderProducts();
+  if (priceDebounceTimer) clearTimeout(priceDebounceTimer);
+  priceDebounceTimer = window.setTimeout(() => shop.renderProducts(), 200);
 });
 
 priceMaxInput?.addEventListener("input", () => {
   state.setPriceMax(priceMaxInput.value ? parseFloat(priceMaxInput.value) : null);
-  shop.renderProducts();
+  if (priceDebounceTimer) clearTimeout(priceDebounceTimer);
+  priceDebounceTimer = window.setTimeout(() => shop.renderProducts(), 200);
 });
 
 // ---- Wishlist Button ----
@@ -267,21 +270,33 @@ async function init() {
   state.applyTheme(saved);
   initAnalytics();
 
-  state.setProducts(await getProducts());
+  const [products, supabaseUser] = await Promise.all([
+    getProducts(),
+    api.isSupabaseConfigured() ? api.getCurrentUser() : Promise.resolve(null),
+  ]);
+
+  state.setProducts(products);
 
   let rv: number[] = loadLocalArray("recentlyViewed", []);
   rv = rv.filter(id => state.products.some(p => p.id === id));
   state.setRecentlyViewed(rv);
 
+  if (supabaseUser) {
+    state.setUserId(supabaseUser.id);
+    state.setUserEmail(supabaseUser.email ?? null);
+  }
+
+  if (!api.isSupabaseConfigured()) {
+    const localUser = await api.getCurrentUser();
+    if (localUser) {
+      state.setUserId(localUser.id);
+      state.setUserEmail(localUser.email ?? null);
+    }
+  }
+
   updateAuthUI();
 
   if (api.isSupabaseConfigured()) {
-    const user = await api.getCurrentUser();
-    if (user) {
-      state.setUserId(user.id);
-      state.setUserEmail(user.email ?? null);
-    }
-    updateAuthUI();
     api.onAuthChange((u: any) => {
       if (u) {
         state.setUserId(u.id);
@@ -296,7 +311,7 @@ async function init() {
     });
   }
 
-  setTimeout(() => shop.renderProducts(), 600);
+  shop.renderProducts();
   shop.renderCart();
   shop.renderWishlist();
 }

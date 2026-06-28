@@ -175,15 +175,8 @@ export async function getProducts(): Promise<Product[]> {
 export async function saveProducts(products: Product[]): Promise<void> {
   saveLocal("products", products);
   if (isOnline()) {
-    for (const p of products) {
-      const { id, ...rest } = p;
-      const existing = await supabase!.from("products").select("id").eq("id", id).single();
-      if (existing.data) {
-        await supabase!.from("products").update(rest).eq("id", id);
-      } else {
-        await supabase!.from("products").insert(p);
-      }
-    }
+    const { error } = await supabase!.from("products").upsert(products, { onConflict: "id" });
+    if (error) console.error("Batch upsert failed:", error.message);
   }
 }
 

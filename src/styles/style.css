@@ -95,6 +95,7 @@ body, .navbar, .card, .offcanvas, .modal-content, footer,
   border: 1px solid var(--bs-border-color);
   overflow: hidden;
   border-radius: 12px;
+  will-change: transform;
 }
 
 .product-card:hover {
@@ -186,15 +187,6 @@ body, .navbar, .card, .offcanvas, .modal-content, footer,
   top: 10px;
   left: 10px;
   z-index: 2;
-}
-
-@keyframes sale-pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-}
-
-.sale-badge {
-  animation: sale-pulse 2s ease-in-out infinite;
 }
 
 /* ---- Wishlist Heart ---- */
